@@ -19,9 +19,11 @@ function ready(act){
 }
 
 chrome.runtime.onConnect.addListener(function(port){
-  console.log('wating');
   ready(function(){
-    console.log('start');
+    var title = document.querySelector('title');
+    if( title && title.innerHTML == 'SecurityMatrix' )
+      throw "stop";
+
     var imgs = document.querySelectorAll('img');
     var csss = document.querySelectorAll('link[rel=stylesheet]');
     var i;
