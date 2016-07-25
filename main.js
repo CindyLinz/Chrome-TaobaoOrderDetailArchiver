@@ -1,53 +1,4 @@
 var enc = new TextEncoder('utf8');
-var files = {};
-var external_map = {};
-var external_count = 0;
-
-var ajax = function(url, cb){
-  var xhr = new XMLHttpRequest;
-  xhr.responseType = 'blob';
-  xhr.onreadystatechange = function(){
-    if( xhr.readyState==4 ){
-      xhr.onreadystatechange = function(){};
-      cb(xhr.response);
-    }
-  };
-  xhr.open('GET', url);
-  xhr.send();
-};
-
-var fetch_external = function(port, msg){
-  console.log("fetch_external: " + msg.id);
-  if( external_map[msg.url] ){
-    port.postMessage({
-      cmd: 'external',
-      id: msg.id,
-      type: msg.type,
-      url: external_map[msg.url]
-    });
-    return;
-  }
-
-  var suffix_match = msg.url.match(/(\.[0-9a-zA-Z_-]+)(\?|#|$)/);
-  var name_suffix = '';
-  if( suffix_match )
-    name_suffix = suffix_match[1];
-  else if( msg.ext )
-    name_suffix = '.' + msg.ext;
-
-  ++external_count;
-  external_map[msg.url] = 'ext_' + external_count + name_suffix;
-
-  ajax(msg.url, function(response){
-    files[external_map[msg.url]] = response;
-    port.postMessage({
-      cmd: 'external',
-      id: msg.id,
-      type: msg.type,
-      url: external_map[msg.url]
-    });
-  });
-};
 
 var tar_numeric = function(num, len){
   var buffer = new Uint8Array(len);
@@ -117,42 +68,93 @@ var create_file_in_tar = function(filename, content){
   return new Blob(blob_parts);
 };
 
-var order, datetime;
-var done = function(){
-  var folder_name = datetime.replace(/\s+/g, '.') + '-' + order;
-  console.log(folder_name);
-  console.log(files);
-
-  var entry;
-  var blob_parts = [];
-  for(entry in files)
-    blob_parts.push(create_file_in_tar(folder_name + '/' + entry, files[entry]));
-  blob_parts.push(new ArrayBuffer(1024));
-
-  var blob = new Blob(blob_parts);
-  var blob_url = URL.createObjectURL(blob);
-  /*
-  chrome.downloads.download({
-    url: blob_url,
-    filename: filename
-  });
-  */
-  var anchor = document.createElement('a');
-  anchor.download = folder_name + '.tar';
-  anchor.href = blob_url;
-  anchor.innerHTML = folder_name + '.tar';
-  document.body.appendChild(anchor);
-  anchor.click();
-  document.body.removeChild(anchor);
-};
-
 var menu_id = chrome.contextMenus.create({
   "title": "archive taobao order detail",
   "contexts":['link'],
   "onclick": function(info){
     var match = info.linkUrl.match(/bizOrderId=(\d+)/);
     if( match ){
-      order = match[1];
+      var datetime;
+      var order = match[1];
+
+      var files = {};
+      var external_map = {};
+      var external_count = 0;
+
+      var done = function(){
+        var folder_name = datetime.replace(/\s+/g, '.') + '-' + order;
+        console.log(folder_name);
+        console.log(files);
+
+        var entry;
+        var blob_parts = [];
+        for(entry in files)
+          blob_parts.push(create_file_in_tar(folder_name + '/' + entry, files[entry]));
+        blob_parts.push(new ArrayBuffer(1024));
+
+        var blob = new Blob(blob_parts);
+        var blob_url = URL.createObjectURL(blob);
+        /*
+        chrome.downloads.download({
+          url: blob_url,
+          filename: filename
+        });
+        */
+        var anchor = document.createElement('a');
+        anchor.download = folder_name + '.tar';
+        anchor.href = blob_url;
+        anchor.innerHTML = folder_name + '.tar';
+        document.body.appendChild(anchor);
+        anchor.click();
+        document.body.removeChild(anchor);
+      };
+
+      var ajax = function(url, cb){
+        var xhr = new XMLHttpRequest;
+        xhr.responseType = 'blob';
+        xhr.onreadystatechange = function(){
+          if( xhr.readyState==4 ){
+            xhr.onreadystatechange = function(){};
+            cb(xhr.response);
+          }
+        };
+        xhr.open('GET', url);
+        xhr.send();
+      };
+
+      var fetch_external = function(port, msg){
+        console.log("fetch_external: " + msg.id);
+        if( external_map[msg.url] ){
+          port.postMessage({
+            cmd: 'external',
+            id: msg.id,
+            type: msg.type,
+            url: external_map[msg.url]
+          });
+          return;
+        }
+
+        var suffix_match = msg.url.match(/(\.[0-9a-zA-Z_-]+)(\?|#|$)/);
+        var name_suffix = '';
+        if( suffix_match )
+          name_suffix = suffix_match[1];
+        else if( msg.ext )
+          name_suffix = '.' + msg.ext;
+
+        ++external_count;
+        external_map[msg.url] = 'ext_' + external_count + name_suffix;
+
+        ajax(msg.url, function(response){
+          files[external_map[msg.url]] = response;
+          port.postMessage({
+            cmd: 'external',
+            id: msg.id,
+            type: msg.type,
+            url: external_map[msg.url]
+          });
+        });
+      };
+
       chrome.tabs.create(
         {
           url: info.linkUrl,
