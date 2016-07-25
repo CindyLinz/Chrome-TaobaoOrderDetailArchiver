@@ -6,7 +6,7 @@ Usage:
 
   * Right click on the `订单详情` link, and then left click on `archive taobao order detail`.
 
-    ![usage](//cindylinz.github.io/Chrome-TaobaoOrderDetailArchiver/usage.jpg)
+    ![usage](https://cindylinz.github.io/Chrome-TaobaoOrderDetailArchiver/usage.jpg)
 
   * Wait for a while.
 
