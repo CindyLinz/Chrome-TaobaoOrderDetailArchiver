@@ -19,14 +19,22 @@ chrome.runtime.onConnect.addListener(function(port){
   ready(function(){
     var item_list = [];
     var item_anchors = document.querySelectorAll('.order-item .txt-info .name a');
-    if( !item_anchors.length )
-        item_anchors = document.querySelectorAll('a.item-link');
-    var i, item_anchor;
-    for(i=0; i<item_anchors.length; ++i){
-      item_anchor = item_anchors[i];
-      item_list.push(item_anchor.href);
-      item_anchor.href = item_list.length + '.html';
+    var item_img_anchors;
+    if( item_anchors.length ){
+      item_img_anchors = document.querySelectorAll('.order-item .pic-info a');
     }
+    else{
+      item_anchors = document.querySelectorAll('a.item-link');
+      item_img_anchors = document.querySelectorAll('.item-img a');
+    }
+
+    var i;
+    for(i=0; i<item_anchors.length; ++i){
+      item_list.push(item_anchors[i].href);
+      item_anchors[i].href = (i+1) + '.html';
+    }
+    for(i=0; i<item_img_anchors.length; ++i)
+      item_img_anchors[i].href = (i+1) + '.html';
 
     var imgs = document.querySelectorAll('img');
     var csss = document.querySelectorAll('link[rel=stylesheet]');
