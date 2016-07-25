@@ -26,6 +26,7 @@ chrome.runtime.onConnect.addListener(function(port){
     var external_loading = imgs.length + csss.length;
 
     function done(){
+      remove(document.querySelectorAll('script'));
       port.postMessage({
         cmd: 'done',
         datetime: document.querySelector('.datetime').innerHTML,

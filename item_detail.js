@@ -15,6 +15,7 @@ chrome.runtime.onConnect.addListener(function(port){
     var external_loading = imgs.length + csss.length;
 
     function done(){
+      remove(document.querySelectorAll('script'));
       port.postMessage({
         cmd: 'done',
         html: document.documentElement.outerHTML.replace(/<meta charset="gbk">/, '<meta charset="utf8">'),
