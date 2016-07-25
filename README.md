@@ -1,4 +1,4 @@
-This is a Chrome extension for archive a Taobao order detail page and also its item detail snapshot pages.
+This is a Chrome extension for archiving a Taobao order detail page and also its item detail snapshot pages.
 
 Usage:
 
