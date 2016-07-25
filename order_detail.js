@@ -16,7 +16,17 @@ function ready(act){
 }
 
 chrome.runtime.onConnect.addListener(function(port){
-  ready(function(){
+  var main = function(){
+    var datetime;
+    if( document.querySelector('.datetime') )
+      datetime = document.querySelector('.datetime').innerHTML;
+    else if( document.querySelector('.step-time-wraper') )
+      datetime = document.querySelector('.step-time-wraper').innerHTML;
+    else{
+      setTimeout(main, 1000);
+      return;
+    }
+
     var item_list = [];
     var item_anchors = document.querySelectorAll('.order-item .txt-info .name a');
     var item_img_anchors;
@@ -44,11 +54,7 @@ chrome.runtime.onConnect.addListener(function(port){
 
     function done(){
       remove(document.querySelectorAll('script'));
-      var datetime;
-      if( document.querySelector('.datetime') )
-        datetime = document.querySelector('.datetime').innerHTML;
-      else
-        datetime = document.querySelector('.step-time-wraper').innerHTML;
+
       port.postMessage({
         cmd: 'done',
         datetime: datetime,
@@ -88,6 +94,6 @@ chrome.runtime.onConnect.addListener(function(port){
     }
     if( external_loading==0 )
       done();
-
-  });
+  };
+  ready(main);
 });

@@ -19,10 +19,12 @@ function ready(act){
 }
 
 chrome.runtime.onConnect.addListener(function(port){
-  ready(function(){
+  var main = function(){
     var title = document.querySelector('title');
-    if( title && title.innerHTML == 'SecurityMatrix' )
-      throw "stop";
+    if( title && title.innerHTML == 'SecurityMatrix' || document.readyState!='complete' ){
+      setTimeout(main, 1000);
+      return;
+    }
 
     var imgs = document.querySelectorAll('img');
     var csss = document.querySelectorAll('link[rel=stylesheet]');
@@ -72,6 +74,6 @@ chrome.runtime.onConnect.addListener(function(port){
     console.log(external_loading);
     if( external_loading==0 )
       done();
-
-  });
+  };
+  ready(main);
 });
