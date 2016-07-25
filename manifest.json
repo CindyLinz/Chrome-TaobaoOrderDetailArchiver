@@ -12,6 +12,8 @@
         "https://*.alicdn.com/",
         "http://*.alicdn.com/",
         "http://*.taobaocdn.com/",
+        "https://*.tmall.com/",
+        "http://*.tmall.com/",
         "https://*.aliyun.com/"
     ],
 

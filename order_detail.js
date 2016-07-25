@@ -19,6 +19,8 @@ chrome.runtime.onConnect.addListener(function(port){
   ready(function(){
     var item_list = [];
     var item_anchors = document.querySelectorAll('.order-item .txt-info .name a');
+    if( !item_anchors.length )
+        item_anchors = document.querySelectorAll('a.item-link');
     var i, item_anchor;
     for(i=0; i<item_anchors.length; ++i){
       item_anchor = item_anchors[i];
@@ -34,9 +36,14 @@ chrome.runtime.onConnect.addListener(function(port){
 
     function done(){
       remove(document.querySelectorAll('script'));
+      var datetime;
+      if( document.querySelector('.datetime') )
+        datetime = document.querySelector('.datetime').innerHTML;
+      else
+        datetime = document.querySelector('.step-time-wraper').innerHTML;
       port.postMessage({
         cmd: 'done',
-        datetime: document.querySelector('.datetime').innerHTML,
+        datetime: datetime,
         html: document.documentElement.outerHTML.replace(/<meta charset="gbk">/, '<meta charset="utf8">'),
         items: item_list
       });
