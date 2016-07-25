@@ -10,8 +10,9 @@ remove(document.querySelectorAll('.tb-pine'));
 chrome.runtime.onConnect.addListener(function(port){
   window.onload = function(){
     var imgs = document.querySelectorAll('img');
+    var csss = document.querySelectorAll('link[rel=stylesheet]');
     var i;
-    var image_loading = 0;
+    var external_loading = imgs.length + csss.length;
 
     function done(){
       port.postMessage({
@@ -23,23 +24,39 @@ chrome.runtime.onConnect.addListener(function(port){
     port.onMessage.addListener(function(msg){
       if( msg.cmd == 'img' ){
         imgs[msg.id].src = msg.data;
-        --image_loading;
-        if( image_loading==0 )
+        console.log(external_loading);
+        --external_loading;
+        if( external_loading==0 )
+          done();
+      }
+      if( msg.cmd == 'external' ){
+        if( msg.type == 'css-href' )
+          csss[msg.id].href = msg.url;
+        --external_loading;
+        console.log(external_loading);
+        if( external_loading==0 )
           done();
       }
     });
 
-    ++image_loading;
     for(i=0; i<imgs.length; ++i){
-      ++image_loading;
       port.postMessage({
         cmd: 'img',
         id: i,
         url: imgs[i].src
       });
     }
-    --image_loading;
-    if( image_loading==0 )
+    for(i=0; i<csss.length; ++i){
+      console.log("post external " + i, csss[i].href);
+      port.postMessage({
+        cmd: 'external',
+        id: i,
+        type: 'css-href',
+        ext: 'css',
+        url: csss[i].href
+      });
+    }
+    if( external_loading==0 )
       done();
 
   };

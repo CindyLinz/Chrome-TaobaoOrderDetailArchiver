@@ -23,7 +23,7 @@ chrome.runtime.onConnect.addListener(function(port){
     var csss = document.querySelectorAll('link[rel=stylesheet]');
 
     var i;
-    var external_loading = 0;
+    var external_loading = imgs.length + csss.length;
 
     function done(){
       port.postMessage({
@@ -50,9 +50,7 @@ chrome.runtime.onConnect.addListener(function(port){
       }
     });
 
-    ++external_loading;
     for(i=0; i<imgs.length; ++i){
-      ++external_loading;
       port.postMessage({
         cmd: 'img',
         id: i,
@@ -60,15 +58,14 @@ chrome.runtime.onConnect.addListener(function(port){
       });
     }
     for(i=0; i<csss.length; ++i){
-      ++external_loading;
       port.postMessage({
         cmd: 'external',
         id: i,
         type: 'css-href',
+        ext: 'css',
         url: csss[i].href
       });
     }
-    --external_loading;
     if( external_loading==0 )
       done();
 

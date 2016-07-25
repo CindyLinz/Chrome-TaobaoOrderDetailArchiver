@@ -17,6 +17,7 @@ var ajax = function(url, cb){
 };
 
 var fetch_image = function(port, msg){
+  console.log("fetch_image: " + msg.id);
   chrome.tabs.create(
     {
       url: msg.url,
@@ -43,6 +44,7 @@ var fetch_image = function(port, msg){
 };
 
 var fetch_external = function(port, msg){
+  console.log("fetch_external: " + msg.id);
   if( external_map[msg.url] ){
     port.postMessage({
       cmd: 'external',
@@ -220,6 +222,8 @@ var menu_id = chrome.contextMenus.create({
                             item_port.onMessage.addListener(function(item_msg){
                               if( item_msg.cmd == 'img' )
                                 fetch_image(item_port, item_msg);
+                              if( item_msg.cmd == 'external' )
+                                fetch_external(item_port, item_msg);
                               if( item_msg.cmd == 'done' ){
                                 files[i + 1 + '.html'] = enc.encode(item_msg.html);
                                 setTimeout(function(){
