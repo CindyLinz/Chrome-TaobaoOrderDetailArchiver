@@ -23,27 +23,23 @@ chrome.runtime.onConnect.addListener(function(port){
     }
 
     port.onMessage.addListener(function(msg){
-      if( msg.cmd == 'img' ){
-        imgs[msg.id].src = msg.data;
-        console.log(external_loading);
-        --external_loading;
-        if( external_loading==0 )
-          done();
-      }
       if( msg.cmd == 'external' ){
+        if( msg.type == 'img-src' )
+          imgs[msg.id].src = msg.url;
         if( msg.type == 'css-href' )
           csss[msg.id].href = msg.url;
         --external_loading;
-        console.log(external_loading);
         if( external_loading==0 )
           done();
       }
     });
 
     for(i=0; i<imgs.length; ++i){
+      console.log("post img " + i, imgs[i].src);
       port.postMessage({
-        cmd: 'img',
+        cmd: 'external',
         id: i,
+        type: 'img-src',
         url: imgs[i].src
       });
     }

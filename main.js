@@ -16,33 +16,6 @@ var ajax = function(url, cb){
   xhr.send();
 };
 
-var fetch_image = function(port, msg){
-  console.log("fetch_image: " + msg.id);
-  chrome.tabs.create(
-    {
-      url: msg.url,
-      active: false
-    }, function(img_tab){
-      chrome.tabs.executeScript(
-        img_tab.id,
-        {
-          file: 'fetch_image.js',
-          runAt: 'document_end'
-        }, function(){
-          chrome.tabs.sendMessage(img_tab.id, '', function(res){
-            chrome.tabs.remove(img_tab.id);
-            port.postMessage({
-              cmd: 'img',
-              id: msg.id,
-              data: res
-            });
-          });
-        }
-      );
-    }
-  );
-};
-
 var fetch_external = function(port, msg){
   console.log("fetch_external: " + msg.id);
   if( external_map[msg.url] ){
@@ -193,8 +166,6 @@ var menu_id = chrome.contextMenus.create({
             }, function(){
               var port = chrome.tabs.connect(tab.id);
               port.onMessage.addListener(function(msg){
-                if( msg.cmd == 'img' )
-                  fetch_image(port, msg);
                 if( msg.cmd == 'external' )
                   fetch_external(port, msg);
                 if( msg.cmd == 'done' ){
@@ -220,8 +191,6 @@ var menu_id = chrome.contextMenus.create({
                           }, function(){
                             var item_port = chrome.tabs.connect(item_tab.id);
                             item_port.onMessage.addListener(function(item_msg){
-                              if( item_msg.cmd == 'img' )
-                                fetch_image(item_port, item_msg);
                               if( item_msg.cmd == 'external' )
                                 fetch_external(item_port, item_msg);
                               if( item_msg.cmd == 'done' ){
