@@ -20,8 +20,10 @@ chrome.runtime.onConnect.addListener(function(port){
     }
 
     var imgs = document.querySelectorAll('img');
+    var csss = document.querySelectorAll('link[rel=stylesheet]');
+
     var i;
-    var image_loading = 0;
+    var external_loading = 0;
 
     function done(){
       port.postMessage({
@@ -35,23 +37,39 @@ chrome.runtime.onConnect.addListener(function(port){
     port.onMessage.addListener(function(msg){
       if( msg.cmd == 'img' ){
         imgs[msg.id].src = msg.data;
-        --image_loading;
-        if( image_loading==0 )
+        --external_loading;
+        if( external_loading==0 )
+          done();
+      }
+      if( msg.cmd == 'external' ){
+        if( msg.type == 'css-href' )
+          csss[msg.id].href = msg.url;
+        --external_loading;
+        if( external_loading==0 )
           done();
       }
     });
 
-    ++image_loading;
+    ++external_loading;
     for(i=0; i<imgs.length; ++i){
-      ++image_loading;
+      ++external_loading;
       port.postMessage({
         cmd: 'img',
         id: i,
         url: imgs[i].src
       });
     }
-    --image_loading;
-    if( image_loading==0 )
+    for(i=0; i<csss.length; ++i){
+      ++external_loading;
+      port.postMessage({
+        cmd: 'external',
+        id: i,
+        type: 'css-href',
+        url: csss[i].href
+      });
+    }
+    --external_loading;
+    if( external_loading==0 )
       done();
 
   };

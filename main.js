@@ -1,3 +1,21 @@
+var enc = new TextEncoder('utf8');
+var files = {};
+var external_map = {};
+var external_count = 0;
+
+var ajax = function(url, cb){
+  var xhr = new XMLHttpRequest;
+  xhr.responseType = 'blob';
+  xhr.onreadystatechange = function(){
+    if( xhr.readyState==4 ){
+      xhr.onreadystatechange = function(){};
+      cb(xhr.response);
+    }
+  };
+  xhr.open('GET', url);
+  xhr.send();
+};
+
 var fetch_image = function(port, msg){
   chrome.tabs.create(
     {
@@ -24,6 +42,38 @@ var fetch_image = function(port, msg){
   );
 };
 
+var fetch_external = function(port, msg){
+  if( external_map[msg.url] ){
+    port.postMessage({
+      cmd: 'external',
+      id: msg.id,
+      type: msg.type,
+      url: external_map[msg.url]
+    });
+    return;
+  }
+
+  var suffix_match = msg.url.match(/(\.[0-9a-zA-Z_-]+)(\?|#|$)/);
+  var name_suffix = '';
+  if( suffix_match )
+    name_suffix = suffix_match[1];
+  else if( msg.ext )
+    name_suffix = '.' + msg.ext;
+
+  ++external_count;
+  external_map[msg.url] = 'ext_' + external_count + name_suffix;
+
+  ajax(msg.url, function(response){
+    files[external_map[msg.url]] = response;
+    port.postMessage({
+      cmd: 'external',
+      id: msg.id,
+      type: msg.type,
+      url: external_map[msg.url]
+    });
+  });
+};
+
 var tar_numeric = function(num, len){
   var buffer = new Uint8Array(len);
   var str = num.toString(8);
@@ -45,10 +95,10 @@ var calc_checksum = function(buffer){
 var create_file_in_tar = function(filename, content){
   var blob_parts = [];
   var i;
+  var size = content.length || content.size;
 
   var checksum = 32 * 8;
 
-  var enc = new TextEncoder('utf8');
   var filename_octets = enc.encode(filename);
   blob_parts.push(filename_octets);
   blob_parts.push(new ArrayBuffer(100 - filename_octets.length));
@@ -67,8 +117,7 @@ var create_file_in_tar = function(filename, content){
   checksum += calc_checksum(blob_parts[blob_parts.length-1]);
 
   // size
-  var content_octets = enc.encode(content);
-  blob_parts.push(tar_numeric(content_octets.length, 12));
+  blob_parts.push(tar_numeric(size, 12));
   checksum += calc_checksum(blob_parts[blob_parts.length-1]);
 
   // mtime
@@ -86,24 +135,23 @@ var create_file_in_tar = function(filename, content){
 
   blob_parts.push(new ArrayBuffer(512-257));
 
-  blob_parts.push(content_octets);
-  if( content_octets.length & 511 )
-    blob_parts.push(new ArrayBuffer(512 - (content_octets.length & 511)));
+  blob_parts.push(content);
+  if( size & 511 )
+    blob_parts.push(new ArrayBuffer(512 - (size & 511)));
 
   return new Blob(blob_parts);
 };
 
-var page = {};
 var order, datetime;
 var done = function(){
   var folder_name = datetime.replace(/\s+/g, '.') + '-' + order;
   console.log(folder_name);
-  console.log(page);
+  console.log(files);
 
   var entry;
   var blob_parts = [];
-  for(entry in page)
-    blob_parts.push(create_file_in_tar(folder_name + '/' + entry, page[entry]));
+  for(entry in files)
+    blob_parts.push(create_file_in_tar(folder_name + '/' + entry, files[entry]));
   blob_parts.push(new ArrayBuffer(1024));
 
   var blob = new Blob(blob_parts);
@@ -145,8 +193,10 @@ var menu_id = chrome.contextMenus.create({
               port.onMessage.addListener(function(msg){
                 if( msg.cmd == 'img' )
                   fetch_image(port, msg);
+                if( msg.cmd == 'external' )
+                  fetch_external(port, msg);
                 if( msg.cmd == 'done' ){
-                  page['index.html'] = msg.html;
+                  files['index.html'] = enc.encode(msg.html);
                   datetime = msg.datetime;
                   chrome.tabs.remove(tab.id);
                   var i;
@@ -171,7 +221,7 @@ var menu_id = chrome.contextMenus.create({
                               if( item_msg.cmd == 'img' )
                                 fetch_image(item_port, item_msg);
                               if( item_msg.cmd == 'done' ){
-                                page[i + 1 + '.html'] = item_msg.html;
+                                files[i + 1 + '.html'] = enc.encode(item_msg.html);
                                 setTimeout(function(){
                                   chrome.tabs.remove(item_tab.id);
                                   --loading;
