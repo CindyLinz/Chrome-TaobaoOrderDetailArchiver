@@ -6,9 +6,22 @@ function remove(elems){
 
 remove(document.querySelectorAll('.correlative-items'));
 remove(document.querySelectorAll('.tb-pine'));
+remove(document.querySelectorAll('#tad_head_area'));
+remove(document.querySelectorAll('#tad_first_area'));
+remove(document.querySelectorAll('.tshop-pbsm-shop-top-list'));
+remove(document.querySelectorAll('.tshop-pbsm-shop-item-recommend'));
+
+function ready(act){
+  if( document.readyState=='complete' )
+    setTimeout(act, 0);
+  else
+    window.onload = act;
+}
 
 chrome.runtime.onConnect.addListener(function(port){
-  window.onload = function(){
+  console.log('wating');
+  ready(function(){
+    console.log('start');
     var imgs = document.querySelectorAll('img');
     var csss = document.querySelectorAll('link[rel=stylesheet]');
     var i;
@@ -29,6 +42,7 @@ chrome.runtime.onConnect.addListener(function(port){
         if( msg.type == 'css-href' )
           csss[msg.id].href = msg.url;
         --external_loading;
+        console.log(external_loading);
         if( external_loading==0 )
           done();
       }
@@ -53,8 +67,9 @@ chrome.runtime.onConnect.addListener(function(port){
         url: csss[i].href
       });
     }
+    console.log(external_loading);
     if( external_loading==0 )
       done();
 
-  };
+  });
 });

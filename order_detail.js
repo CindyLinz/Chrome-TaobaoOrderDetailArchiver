@@ -8,8 +8,15 @@ remove(document.querySelectorAll('tbcc'));
 remove(document.querySelectorAll('.banner'));
 remove(document.querySelectorAll('.J_guess-you-like'));
 
+function ready(act){
+  if( document.readyState=='complete' )
+    setTimeout(act, 0);
+  else
+    window.onload = act;
+}
+
 chrome.runtime.onConnect.addListener(function(port){
-  window.onload = function(){
+  ready(function(){
     var item_list = [];
     var item_anchors = document.querySelectorAll('.order-item .txt-info .name a');
     var i, item_anchor;
@@ -67,5 +74,5 @@ chrome.runtime.onConnect.addListener(function(port){
     if( external_loading==0 )
       done();
 
-  };
+  });
 });
