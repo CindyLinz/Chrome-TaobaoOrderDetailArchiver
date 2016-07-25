@@ -1,0 +1,21 @@
+{
+    "manifest_version": 2,
+
+    "name": "Taobao order detail archiver",
+    "description": "Archive Taobao's order detail page and also item trade snapshot pages",
+    "version": "1.0",
+
+    "permissions": [
+        "contextMenus",
+        "tabs",
+        "https://*.taobao.com/",
+        "https://*.alicdn.com/",
+        "http://*.alicdn.com/",
+        "http://*.taobaocdn.com/",
+        "https://*.aliyun.com/"
+    ],
+
+    "background": {
+        "scripts": ["main.js"]
+    }
+}
