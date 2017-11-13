@@ -88,8 +88,10 @@ var menu_id = chrome.contextMenus.create({
 
         var entry;
         var blob_parts = [];
-        for(entry in files)
-          blob_parts.push(create_file_in_tar(folder_name + '/' + entry, files[entry]));
+        for(entry in files){
+          if( files[entry] )
+            blob_parts.push(create_file_in_tar(folder_name + '/' + entry, files[entry]));
+        }
         blob_parts.push(new ArrayBuffer(1024));
 
         var blob = new Blob(blob_parts);
@@ -173,13 +175,13 @@ var menu_id = chrome.contextMenus.create({
                 if( msg.cmd == 'done' ){
                   files['index.html'] = enc.encode(msg.html);
                   datetime = msg.datetime;
-                  chrome.tabs.remove(tab.id);
                   var i;
                   var loading = msg.items.length;
                   if( !loading )
                     done();
 
                   var fetch_item = function(i){
+                    var begin_time = Date.now();
                     chrome.tabs.create(
                       {
                         url: msg.items[i],
@@ -197,15 +199,36 @@ var menu_id = chrome.contextMenus.create({
                                 fetch_external(item_port, item_msg);
                               if( item_msg.cmd == 'done' ){
                                 files[i + 1 + '.html'] = enc.encode(item_msg.html);
+                                var end_time = Date.now();
+                                var need_wait_time, wait_time;
+                                if( i < msg.items.length - 1 ){
+                                  if( 0 && msg.items.length >= 15 )
+                                    need_wait_time = 9000 + Math.random()*4000;
+                                  else
+                                    need_wait_time = 3000;
+                                  /*
+                                  if( i % 12 == 11 )
+                                    need_wait_time = 10000;
+                                  else
+                                    need_wait_time = 3000;
+                                  */
+                                  wait_time = need_wait_time - (end_time - begin_time);
+                                  if( wait_time < 0 )
+                                    wait_time = 0;
+                                }
+                                else
+                                  wait_time = 0;
+                                console.log("i=" + i, "need_wait_time=" + need_wait_time, "wait_time=" + wait_time);
                                 setTimeout(function(){
                                   chrome.tabs.remove(item_tab.id);
                                   --loading;
-                                  if( loading==0 )
+                                  if( loading==0 ){
+                                    chrome.tabs.remove(tab.id);
                                     done();
-                                  if( i < msg.items.length - 1 ){
-                                      fetch_item(i+1);
                                   }
-                                }, 1000);
+                                  else
+                                    fetch_item(i+1);
+                                }, wait_time);
                               }
                             });
                           }

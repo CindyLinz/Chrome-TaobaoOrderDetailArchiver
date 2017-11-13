@@ -30,23 +30,55 @@ chrome.runtime.onConnect.addListener(function(port){
     var csss = document.querySelectorAll('link[rel=stylesheet]');
     var i;
     var external_loading = imgs.length + csss.length;
+    var external_result = [];
 
     function done(){
       remove(document.querySelectorAll('script'));
+
+      var i, t;
+      for(i=0; i<external_result.length; ++i){
+        msg = external_result[i];
+        if( msg.type == 'img-src' ){
+          t = imgs[msg.id].src;
+          imgs[msg.id].src = msg.url;
+          msg.url = t;
+        }
+        if( msg.type == 'css-href' ){
+          t = csss[msg.id].href;
+          csss[msg.id].href = msg.url;
+          msg.url = t;
+        }
+      }
+
       port.postMessage({
         cmd: 'done',
-        html: document.documentElement.outerHTML.replace(/<meta charset="gbk">/, '<meta charset="utf8">'),
+        html: document.documentElement.outerHTML.
+          replace(/<meta charset="gbk">/, '<meta charset="utf8">').
+          replace(
+            /<meta http-equiv="Content-Type" content="text\/html; charset=gb2312">/,
+            '<meta http-equiv="Content-Type" content="text/html; charset=utf8" />'
+          ),
       });
+
+      for(i=0; i<external_result.length; ++i){
+        msg = external_result[i];
+        if( msg.type == 'img-src' ){
+          t = imgs[msg.id].src;
+          imgs[msg.id].src = msg.url;
+          msg.url = t;
+        }
+        if( msg.type == 'css-href' ){
+          t = csss[msg.id].href;
+          csss[msg.id].href = msg.url;
+          msg.url = t;
+        }
+      }
     }
 
     port.onMessage.addListener(function(msg){
       if( msg.cmd == 'external' ){
-        if( msg.type == 'img-src' )
-          imgs[msg.id].src = msg.url;
-        if( msg.type == 'css-href' )
-          csss[msg.id].href = msg.url;
+        external_result.push(msg);
         --external_loading;
-        console.log(external_loading);
         if( external_loading==0 )
           done();
       }

@@ -1,3 +1,9 @@
+function each(array, act){
+  var i;
+  for(i=0; i<array.length; ++i)
+    act(array[i], i);
+}
+
 function remove(elems){
   var i;
   for(i=0; i<elems.length; ++i)
@@ -18,13 +24,21 @@ function ready(act){
 chrome.runtime.onConnect.addListener(function(port){
   var main = function(){
     var datetime;
-    if( document.querySelector('.datetime') )
-      datetime = document.querySelector('.datetime').innerHTML;
+    if( document.querySelector('.trade-time') )
+      datetime = document.querySelector('.trade-time').innerText;
+    else if( document.querySelector('.datetime') )
+      datetime = document.querySelector('.datetime').innerText;
     else if( document.querySelector('.step-time-wraper') )
-      datetime = document.querySelector('.step-time-wraper').innerHTML;
+      datetime = document.querySelector('.step-time-wraper').innerText;
     else{
-      setTimeout(main, 1000);
-      return;
+      each(document.querySelectorAll('span'), function(span){
+        if( span.innerText == '成交时间:' )
+          datetime = span.nextElementSibling.firstElementChild.innerText
+      });
+      if( !datetime ){
+        setTimeout(main, 1000);
+        return;
+      }
     }
 
     var item_list = [];
@@ -35,12 +49,23 @@ chrome.runtime.onConnect.addListener(function(port){
     }
     else{
       item_anchors = document.querySelectorAll('a.item-link');
-      item_img_anchors = document.querySelectorAll('.item-img a');
+
+      if( item_anchors.length ){
+        item_img_anchors = document.querySelectorAll('.item-img a');
+      }
+      else{
+        item_anchors = document.querySelectorAll('.order-item .desc .name a');
+        item_img_anchors = document.querySelectorAll('.order-item a[title=商品图片]');
+      }
     }
 
     var i;
     for(i=0; i<item_anchors.length; ++i){
-      item_list.push(item_anchors[i].href);
+      item_list.push(
+        item_anchors[i].href.
+          replace(/^https:\/\/tradearchive/, 'https://trade').
+          replace(/spm=[^&]*&/, '')
+      );
       item_anchors[i].href = (i+1) + '.html';
     }
     for(i=0; i<item_img_anchors.length; ++i)
@@ -51,24 +76,56 @@ chrome.runtime.onConnect.addListener(function(port){
 
     var i;
     var external_loading = imgs.length + csss.length;
+    var external_result = [];
 
     function done(){
       remove(document.querySelectorAll('script'));
 
+      var i, t;
+      for(i=0; i<external_result.length; ++i){
+        msg = external_result[i];
+        if( msg.type == 'img-src' ){
+          t = imgs[msg.id].src;
+          imgs[msg.id].src = msg.url;
+          msg.url = t;
+        }
+        if( msg.type == 'css-href' ){
+          t = csss[msg.id].href;
+          csss[msg.id].href = msg.url;
+          msg.url = t;
+        }
+      }
+
       port.postMessage({
         cmd: 'done',
         datetime: datetime,
-        html: document.documentElement.outerHTML.replace(/<meta charset="gbk">/, '<meta charset="utf8">'),
+        html: document.documentElement.outerHTML.
+          replace(/<meta charset="gbk">/, '<meta charset="utf8">').
+          replace(
+            /<meta http-equiv="Content-Type" content="text\/html; charset=gb2312">/,
+            '<meta http-equiv="Content-Type" content="text/html; charset=utf8" />'
+          ),
         items: item_list
       });
+
+      for(i=0; i<external_result.length; ++i){
+        msg = external_result[i];
+        if( msg.type == 'img-src' ){
+          t = imgs[msg.id].src;
+          imgs[msg.id].src = msg.url;
+          msg.url = t;
+        }
+        if( msg.type == 'css-href' ){
+          t = csss[msg.id].href;
+          csss[msg.id].href = msg.url;
+          msg.url = t;
+        }
+      }
     }
 
     port.onMessage.addListener(function(msg){
       if( msg.cmd == 'external' ){
-        if( msg.type == 'img-src' )
-          imgs[msg.id].src = msg.url;
-        if( msg.type == 'css-href' )
-          csss[msg.id].href = msg.url;
+        external_result.push(msg);
         --external_loading;
         if( external_loading==0 )
           done();
